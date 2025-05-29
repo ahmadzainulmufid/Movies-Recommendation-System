@@ -27,155 +27,167 @@ Referensi Jurnal :
 
 ### Problem Statements
 
-- Pengguna kesulitan menemukan movie yang sesuai dengan preferensi mereka: Pengguna sering mengalami kesulitan memilih movie yang sesuai karena semakin banyak movie yang tersedia di berbagai platform digital. Proses pencarian movie dapat menjadi tidak efektif dan menurunkan pengalaman pengguna jika tidak ada sistem rekomendasi yang tepat.
-- Content-Based Filtering menghasilkan rekomendasi yang monoton: Pendekatan berbasis konten hanya menyarankan item yang serupa dengan apa yang disukai pengguna sebelumnya, sehingga rekomendasi movie menjadi terlalu seragam dan tidak eksplorasi, sehingga pengguna tidak dikenalkan dengan movie yang berbeda tetapi mungkin disukai.
-- Collaborative Filtering menghadapi masalah cold-start dan data sparsity: Data interaksi pengguna, seperti penilaian, diperlukan untuk filter kolaboratif. Sistem tidak memiliki cukup data untuk membuat rekomendasi yang akurat jika movie atau pengguna masih baru. Ini disebut masalah start dingin. Selain itu, data sparsity—atau jarang interaksi—disebabkan oleh fakta bahwa sebagian besar pengguna hanya memberikan rating yang sedikit. Akibatnya, sulit bagi sistem untuk menemukan pola yang tepat.
+- Pengguna kesulitan menemukan film yang sesuai dengan preferensi mereka karena banyaknya pilihan.
+- Content-Based Filtering cenderung menghasilkan rekomendasi yang monoton (mirip dengan preferensi sebelumnya).
+- Collaborative Filtering menghadapi masalah cold-start (film/pengguna baru) dan data sparsity (data rating jarang).
 
 ### Goals
 
-- Membantu pengguna menemukan movie yang sesuai dengan preferensi mereka: Sistem ini bertujuan untuk memberikan rekomendasi movie yang personal dan relevan sehingga pengguna tidak perlu mencari ribuan judul secara manual. Ini akan meningkatkan kenyamanan dan efektivitas dalam memilih tontonan.
-- Menghindari rekomendasi yang monoton dari sistem berbasis konten: Diharapkan sistem akan dapat merekomendasikan movie yang sebanding dengan preferensi pengguna sebelumnya dan juga dapat memperluas daftar rekomendasi ke movie yang berbeda dan relevan, sehingga meningkatkan pengalaman pengguna.
-- Collaborative Filtering menghadapi masalah cold-start dan data sparsity: Data interaksi pengguna, seperti penilaian, diperlukan untuk collaborative filtering. Sistem tidak memiliki cukup data untuk membuat rekomendasi yang akurat jika movie atau pengguna masih baru.
+- Menghasilkan sistem rekomendasi film yang dapat membantu pengguna menemukan tontonan yang sesuai dengan preferensi mereka, berdasarkan riwayat interaksi dan konten film.
+- Memperluas cakupan rekomendasi agar tidak hanya terfokus pada genre yang sama (mengatasi keterbatasan Content-Based Filtering).
+- Meningkatkan kemampuan sistem dalam memberikan rekomendasi awal pada pengguna atau film baru (mengurangi dampak cold-start dan sparsity).
 
 ### Solution statements
 
-- Implementasi Content-Based Filtering: Content-Based Filtering akan menggunakan informasi konten movie, khususnya genre, untuk memberikan rekomendasi berdasarkan kesamaan konten.
-- Implementasi Collaborative Filtering: Collaborative Filtering akan menggunakan interaksi antara pengguna dan movie seperti rating (tanpa melihat isi movie).
+- Implementasi Content-Based Filtering menggunakan Cosine Similarity pada data genre.
+- Implementasi Collaborative Filtering menggunakan model deep learning (RecommenderNet) untuk memanfaatkan data rating pengguna.
 
-## Data Understanding
+## 📍 Data Understanding
 
-### Informasi Dataset
+### 📊 Dataset
 
-- Terdiri dari 2 variabel: movies dan ratings
-- Jumlah data
-  - movies: 62.423 baris dan 3 kolom (movieId, title, genres)
-  - ratings: 25.000.095 baris dan 4 kolom (userId, movieId, rating, timestamp)
-- Sumber data: [Movie Recommendation System](https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system)
+1. **Movies Dataset**
 
-Variabel-variabel pada Movie Recommendation System dataset adalah sebagai berikut:
+   - **Jumlah Data**: 62.423 baris, 3 kolom
+   - **Fitur**:
+     - `movieId`: ID unik film
+     - `title`: Judul film
+     - `genres`: Genre film (dipisah dengan |)
+   - **Kondisi Data**:
+     - Missing value: Tidak ada
+     - Duplikasi: Tidak ada
+     - Outlier: Tidak relevan
+   - **Sumber**: [Kaggle - Movie Recommendation System](https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system)
 
-- movieId : merupakan identitas unik movie.
-- title: merupakan judul movie.
-- genres: merupakan genre-genre yang dimiliki suatu movie.
-- userId : merupakan identitas unik pengguna yang memberikan rating terhadap movie.
-- rating: merupakan penilaian yang diberikan pengguna terhadap movie.
-- timestamp: merupakan rentang waktu penilaian diberikan oleh pengguna.
+2. **Ratings Dataset**
+   - **Jumlah Data**: 25.000.095 baris, 4 kolom
+   - **Fitur**:
+     - `userId`: ID unik pengguna
+     - `movieId`: ID unik film
+     - `rating`: Nilai rating (0.5 - 5.0)
+     - `timestamp`: Waktu pemberian rating
+   - **Kondisi Data**:
+     - Missing value: Tidak ada
+     - Duplikasi: Tidak ada
+     - Outlier: Tidak ada
 
-Pada proyek ini, beberapa tahapan Exploratory Data Analysis yang dilakukan adalah:
+## 📍 Data Preparation
 
-- Menganalisis univariate variable
-- Menangani missing value
+### ✅ Tahapan Data Preparation
 
-## Data Preparation
+#### 1⃣ Memeriksa dan Mengatasi Missing Value
 
-Adapun beberapa teknik data preparation yang dilakukan pada proyek ini adalah sebagai berikut.
+- Mengecek adanya missing value pada dataset `rated_movies` menggunakan `.isnull().sum()`.
+- Tidak ditemukan missing value, sehingga tidak ada data yang dihapus karena missing value.
 
-  1. Mengatasi Missing value. (Content-Based Filtering)
-  2. Membuat Data duplikat. (Content-Based Filtering)
-  3. Melakukan one-hot encoding pada fitur genres. (Content-Based Filtering)
-  4. Menghitung derajat kesamaan antar movie dengan cosine similarity. (Content-Based Filtering)
-  5. Melakukan encoding pada fitur userId dan movieId. (Collaborative Filtering)
-  6. Melakukan train-test split. (Collaborative Filtering)
+#### 2⃣ Menghapus Data dengan Genre Tidak Tersedia
 
-Penjelasan data preparation yang dilakukan:
+- Memeriksa data film yang memiliki genre `(no genres listed)`.
+- Menghapus baris data dengan genre `(no genres listed)` dari dataset `rated_movies`.
 
-  1. Mengatasi Missing value: Baris data yang memiliki fitur atau kolom yang kosong akan dihilangkan.
-  2. Membuang data duplikat: Berdasarkan fitur movieId, jika ada data yang memiliki id yang sama akan dihilangkan.
-  3. Melakukan one-hot encoding: Fitur genre diubah menjadi representasi vektor biner.
-  4. Menghitung derajat kesamaan: Mengukur seberapa mirip dua vektor dengan menghitung cosinus dari sudut di antara keduanya.
-  5. Melakukan encoding pada userId dan movieId: Mengubah nilai kategorikal (id unik) menjadi format numerik.
-  6. Melakukan train-test split: Memisahkan data training dan data test dengan rasio 80:20 agar model dapat belajar dari sebagian besar data training dan diuji menggunakan data test yang   belum pernah dilihat model sebelumnya.
+#### 3⃣ Sampling Data (Penghapusan 99.9% Baris Data Secara Acak)
 
-Alasan mengapa diperlukan tahapan data preparation tersebut:
+- Melakukan proses sampling besar-besaran dengan menghapus 99.9% baris data secara acak menggunakan `sample(frac=0.999)`.
+- Langkah ini dilakukan untuk mengurangi ukuran dataset agar lebih ringan untuk diproses, terutama pada tahap Content-Based Filtering.
 
-  1. Mengatasi missing value: Data yang memiliki missing value dapat menurunkan performa model yang sedang dilatih karena mengakibatkan bias. Sehingga data yang memiliki missing value harus diatasi.
-  2. Membuang data duplikat: Data duplikat dapat membuat model memberikan bobot yang berlebihan terhadap suatu item. Hal ini mengakibatkan bias dalam sistem rekomendasi jika tidak diatasi.
-  3. Melakukan one-hot encoding: Algoritma seperti Content-Based Filtering memerlukan representasi fitur dalam bentuk vektor numerik agar bisa menghitung kemiripan antar movie.
-  4. Menghitung derajat kesamaan: Menghitung derajat kesamaan diperlukan agar sistem dapat menemukan movie yang paling mirip dengan yang disukai pengguna. Dalam Content-Based Filtering, sistem mencocokkan fitur seperti genre, lalu merekomendasikan movie lain yang memiliki kemiripan tinggi.
-  5. Melakukan encoding pada userId dan movieId: Memetakan ID ke posisi dalam matriks rating, yang digunakan oleh algoritma serta memastikan konsistensi dan efisiensi dalam pemrosesan data.
-  6. Melakukan train-test split: Memastikan bahwa model diuji dengan data yang tidak digunakan selama training sehingga dapat memberikan gambaran nyata tentang kinerja model saat digunakan menggunakan data baru.
+#### 4⃣ Menghapus Data Duplikat
 
-## Modeling
+- Menghapus data duplikat berdasarkan `movieId` untuk memastikan tidak ada film yang tercatat lebih dari sekali.
 
-Tahapan dan parameter yang digunakan dalam proses pemodelan adalah sebagai berikut.
+#### 5⃣ Menggabungkan Dataset Movies dan Ratings
 
-1. Inisialisasi model: Model yang digunakan dalam proyek ini adalah RecommenderNet dari Keras, yang merupakan model rekomendasi berbasis neural network yang dirancang untuk mempelajari preferensi pengguna terhadap item (seperti movie) dengan menggunakan embedding layer untuk merepresentasikan userId dan movieId
+- Menggabungkan dataset `movies` dengan `ratings` berdasarkan `movieId` untuk membentuk dataset `rated_movies` yang berisi `movieId`, `title`, `genres`, `userId`, dan `rating`.
 
-2. Pelatihan model: Setelah model selesai diinisialisasi, dilakukan pelatihan menggunakan data training. Proses ini melibatkan pemberian input (x_train) dan target (y_train) ke dalam model.
+#### 6⃣ Mengonversi Kolom `genres` menjadi List
 
-3. Evaluasi awal model: Sebelum melakukan tuning, model dievaluasi menggunakan metrik root mean squared error (RMSE) untuk mengukur seberapa jauh nilai prediksi dengan nilai sebenarnya.
+- Mengubah kolom `genres` dari format string menjadi list genre untuk setiap film.
 
----
+#### 7⃣ Membuat DataFrame `movie_new` untuk Content-Based Filtering
 
-Solusi rekomendasi dan algoritma yang digunakan sebagai berikut.
+- Membuat DataFrame `movie_new` yang berisi `movieId`, `title`, dan `genre` (hasil konversi list).
+- Data ini digunakan untuk proses Content-Based Filtering.
 
-- Content-Based Filtering menggunakan algoritma Cosine Similarity
-    Metode ini menampilkan setiap film sebagai vektor fitur yang didasarkan pada genrenya. Ketika teknik One-Hot Encoding digunakan, genre diubah menjadi representasi numerik. Selanjutnya, metode Cosine Similarity digunakan untuk menghitung tingkat kemiripan antara dua movie. Ini menghasilkan nilai antara 0 dan 1, dan semakin tinggi nilainya, semakin mirip kontennya. Berikut adalah contoh outputnya:
+#### 8⃣ One-Hot Encoding pada Kolom `genres`
 
-  ![Screenshot 2025-04-24 142035](https://github.com/user-attachments/assets/381cc03b-7eb5-472f-a87a-e60be87f82ee)
+- Melakukan proses one-hot encoding pada kolom `genres` untuk menghasilkan representasi vektor biner dari genre film.
 
-- Collaborative Filtering menggunakan model Deep Learning, RecommenderNet  
-    RecommenderNet adalah model berbasis deep learning yang menggunakan lapisan embedding untuk memetakan pengguna dan item (movie) ke dalam ruang vektor berdimensi rendah. Setiap pengguna dan item diwakili oleh vektor, dan prediksi nilai dibuat dengan menghitung dot product dari kedua lapisan. Model dilatih dengan loss function seperti Root Mean Squared Error, dan Adam optimizer digunakan untuk mengoptimasikannya. Dan pada pendekatan ini, rekomendasi movie yang diberikan adalah berdasarkan penilaian yang diberikan pengguna. Berikut adalah contoh outputnya:
+#### 9⃣ Encoding pada `userId` dan `movieId` untuk Collaborative Filtering
 
-  ![Screenshot 2025-04-24 142949](https://github.com/user-attachments/assets/64f1e874-5e32-4318-bce7-2babc51ae7a1)
+- Melakukan encoding pada kolom `userId` dan `movieId` menjadi integer agar dapat digunakan sebagai input model Collaborative Filtering (RecommenderNet).
 
+#### 🔡 Train-Test Split
 
----
+- Membagi data `ratings` menjadi 80% untuk training dan 20% untuk testing, memastikan evaluasi model dilakukan pada data yang belum pernah dilihat.
 
-Kelebihan dan kekurangan dari Cosine Similarity.
+## 📍 Modeling
 
-Kelebihan:
+### 1️⃣ Content-Based Filtering
 
-1. Efektif untuk data berdimensi tinggi
-2. Mengukur kemiripan berdasarkan arah, bukan besar nilai
-3. Mudah diimplementasikan
+- **Fitur**: Genre
+- **Algoritma**: Cosine Similarity
+- **Output**: Rekomendasi film yang mirip dengan preferensi pengguna berdasarkan genre.
 
-Kekurangan:
+#### 📊 Contoh Top-5 Rekomendasi untuk Film "Lights Out (2016)"
 
-1. Tidak mempertimbangkan besarnya rating
-2. Kurang akurat jika semua nilai rendah atau nol
-3. Tidak memperhitungkan bias pengguna
+| Rekomendasi Film                    | Genre  |
+|------------------------------------|--------|
+| Pet Sematary (1989)                 | Horror |
+| Mangler, The (1995)                 | Horror |
+| Amityville 3-D (1983)               | Horror |
+| Amityville II: The Possession (1982)| Horror |
+| Jeepers Creepers (2001)             | Horror |
 
-## Evaluation
+### 2️⃣ Collaborative Filtering
 
-- Metrik yang digunakan.
-  Metrik yang digunakan dalam proyek ini adalah root mean squared error (RMSE). Root Mean Squared Error (RMSE) adalah metrik evaluasi yang digunakan untuk mengukur seberapa jauh prediksi sistem rekomendasi dari nilai rating yang sebenarnya.
+- **Model**: RecommenderNet (Deep Learning)
+- **Arsitektur**:
+  - Embedding layer untuk `userId` dan `movieId`
+  - Dot product untuk prediksi rating
+- **Optimizer**: Adam
+- **Loss**: RMSE
+- **Epochs**: 20 epoch
 
-  ![Screenshot 2025-04-21 113631](https://github.com/user-attachments/assets/05d4b9d6-f8c0-4bfc-91b7-1a9d8b25225e)
+#### 📊 Contoh Top-5 Rekomendasi untuk User 1
 
+| movieId | Predicted Rating |
+|---------|------------------|
+| 750     | 0.86             |
+| 1617    | 0.84             |
+| 48516   | 0.84             |
+| 318     | 0.83             |
+| 912     | 0.83             |
 
+#### 🔍 Visualisasi Training
 
-- Formula metrik dan bagaimana metrik tersebut bekerja.
+Grafik berikut menunjukkan hasil training model RecommenderNet selama 20 epoch. Terlihat bahwa nilai RMSE pada data training dan validation terus menurun seiring bertambahnya epoch, dengan stabilitas model yang semakin baik pada epoch ke-15 ke atas.
 
-  RMSE didefinisikan dengan rumus berikut:
-  
-  ![rmse2](https://github.com/user-attachments/assets/6f20e44c-0e02-4586-898c-b08894af7d02)
+![image](https://github.com/user-attachments/assets/b81fcbb9-710c-4635-b499-a8f43656feaf)
 
+Dengan ini, bagian Modeling telah mencakup penjelasan metode, arsitektur, hasil rekomendasi (Top-N recommendation), dan metrik performa model. 🚀
 
-di mana:
+## 📍 Evaluation
 
-- yi = rating aktual sebenarnya ke-i
-- pi = rating yang diprediksi ke-i
-- n = jumlah total data prediksi
-- (yi - pi)^2 = kuadrat dari selisih antara rating aktual dan prediksi
+### 1️⃣ Collaborative Filtering
 
-- Cara kerja RMSE.
+- **Metrik**: Root Mean Squared Error (RMSE)
+- **Nilai RMSE Akhir**:
+  - **RMSE (train)**: 0.2060
+  - **RMSE (validation)**: 0.2592
 
-  - Mengukur error: Untuk setiap pasangan prediksi dan nilai aktual, sistem menghitung selisihnya.
-  - Mengkuadratkan selisih: Memberi penalti lebih besar terhadap kesalahan besar (karena error dikuadratkan).
-  - Mengambil rata-rata dari seluruh kuadrat error: Ini menghasilkan nilai MSE (Mean Squared Error).
-  - Mengakarkan hasil MSE: Supaya satuannya kembali ke skala asli rating (misalnya 1–5), maka digunakan akar kuadrat.
+### 2️⃣ Content-Based Filtering
 
-- Hasil proyek berdasarkan metrik evaluasi terhadap setiap problem statement, goals dan solution statement
+- **Metrik**: Precision@K (K=4)
+- **Hasil Evaluasi User 7002**:
+  - Dari 4 rekomendasi teratas, tidak ada satupun yang relevan (tidak ada rating ≥4.0), sehingga Precision@4 = 0.0.
 
-  - Problem Statement
+- **Perhitungan Precision@4**:
+  - **Langkah-langkah**:
+    1. Mengambil histori rating user 7002: hanya ada 1 film dengan rating 2.0.
+    2. Membuat rekomendasi Top-4 berbasis Content-Based Filtering menggunakan film tersebut sebagai acuan.
+    3. Tidak ada rekomendasi yang cocok dengan histori rating user (tidak ada rating ≥4.0).
+    4. Sehingga, Precision@4 = 0/4 = 0.0.
 
-    - Pengguna kesulitan menemukan movie yang sesuai dengan preferensi mereka: Penurunan nilai RMSE menunjukkan bahwa model dapat memprediksi rating dengan lebih akurat, yang membuat sistem rekomendasi lebih relevan dan membantu pengguna menemukan movie yang sesuai tanpa mencari secara manual.
-    - Content-Based Filtering menghasilkan rekomendasi yang monoton: Dengan prediksi yang semakin akurat (RMSE turun signifikan), model dapat menggabungkan informasi tentang fitur movie, seperti genre, dengan preferensi pengguna. Dengan demikian, sistem dapat menyarankan movie yang berbeda namun relevan meskipun berbasis konten.
-    - Collaborative Filtering menghadapi masalah cold-start dan data sparsity: Meskipun ada sedikit data interaksi pengguna, nilai RMSE pada data uji tetap rendah dan stabil. Ini menunjukkan bahwa model masih dapat membuat prediksi yang layak bahkan dalam situasi di mana ada sedikit data pengguna atau item baru.
+### ✨ Interpretasi
 
-  - Goals
-
-    - Membantu pengguna menemukan movie yang sesuai dengan preferensi mereka: Prediksi rating yang akurat dengan nilai RMSE yang rendah diberikan oleh sistem rekomendasi yang berhasil, sehingga rekomendasi yang ditampilkan lebih personal dan sesuai dengan minat pengguna, sehingga pengguna tidak perlu mencari daftar movie secara manual.
-    - Menghindari rekomendasi yang monoton dari sistem berbasis konten: Sistem dapat memberikan rekomendasi yang tidak hanya sebanding dengan preferensi sebelumnya tetapi juga mencakup movie-movie lain yang relevan namun belum pernah ditonton, meningkatkan keanekaragaman tontonan dengan menggunakan Content-Based Filtering berdasarkan genre dan Collaborative Filtering berdasarkan rating.
-    - Collaborative Filtering menghadapi masalah cold-start dan data sparsity: Sistem menunjukkan kinerja prediksi yang baik (berdasarkan metrik RMSE). Ini menunjukkan bahwa model dapat menangani situasi cold-start secara moderat sambil tetap memberikan rekomendasi awal yang layak untuk pengguna atau movie baru.
+- **Collaborative Filtering**: RMSE yang rendah menunjukkan prediksi rating mendekati nilai aktual.
+- **Content-Based Filtering**: Precision@4 = 0.0 menunjukkan rekomendasi yang diberikan tidak sesuai dengan minat user 7002, yang mungkin disebabkan oleh jumlah histori rating user yang sangat sedikit (hanya 1 film, dengan rating rendah).
