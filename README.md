@@ -71,53 +71,117 @@ Referensi Jurnal :
      - Duplikasi: Tidak ada
      - Outlier: Tidak ada
 
-## 📍 Data Preparation
+ikut revisi Data Preparation dalam format .md:
 
-### ✅ Tahapan Data Preparation
+markdown
+Copy
+Edit
+# 📍 Data Preparation
 
-#### 1⃣ Memeriksa dan Mengatasi Missing Value
+## ✅ Tahapan Data Preparation
 
-- Mengecek adanya missing value pada dataset `rated_movies` menggunakan `.isnull().sum()`.
-- Tidak ditemukan missing value, sehingga tidak ada data yang dihapus karena missing value.
+### Menggabungkan Dataset Movies dan Ratings
+- Dataset `movies` digabungkan dengan dataset `ratings` berdasarkan kolom `movieId`.
+- Hasil penggabungan membentuk dataset `rated_movies` dengan kolom `movieId`, `title`, `genres`, `userId`, `rating`, dan `timestamp`.
 
-#### 2⃣ Menghapus Data dengan Genre Tidak Tersedia
+### Memeriksa dan Mengatasi Missing Value
+- Dilakukan pengecekan missing value dengan `.isnull().sum()` pada dataset `rated_movies`.
+- Ditemukan 3.376 missing value pada kolom `userId`, `rating`, dan `timestamp`.
+- Missing value dihapus menggunakan `rated_movies.dropna()`.
+- Setelah penghapusan, dicek kembali untuk memastikan tidak ada missing value yang tersisa.
 
-- Memeriksa data film yang memiliki genre `(no genres listed)`.
-- Menghapus baris data dengan genre `(no genres listed)` dari dataset `rated_movies`.
+### Mengubah Tipe Data Kolom `userId`
+- Kolom `userId` diubah dari `float` menjadi `int` dengan `rated_movies['userId'] = rated_movies['userId'].astype('int')`.
+- Langkah ini penting agar kolom `userId` sesuai dengan input model Collaborative Filtering.
 
-#### 3⃣ Sampling Data (Penghapusan 99.9% Baris Data Secara Acak)
+### Menghapus Data dengan Genre Tidak Tersedia
+- Data film dengan genre `(no genres listed)` diidentifikasi dan dihapus.
+- Proses dilakukan menggunakan `rated_movies[rated_movies['genres'] != '(no genres listed)']`.
 
-- Melakukan proses sampling besar-besaran dengan menghapus 99.9% baris data secara acak menggunakan `sample(frac=0.999)`.
-- Langkah ini dilakukan untuk mengurangi ukuran dataset agar lebih ringan untuk diproses, terutama pada tahap Content-Based Filtering.
+### Sampling Data (Penghapusan 99.9% Baris Data Secara Acak)
+- Untuk mempercepat pemrosesan, dilakukan penghapusan 99.9% baris data secara acak dengan `sample(frac=0.999, random_state=42)`.
+- Langkah ini ditujukan untuk mengurangi ukuran dataset agar lebih ringan pada tahap Content-Based Filtering.
 
-#### 4⃣ Menghapus Data Duplikat
+### Menghapus Data Duplikat
+- Data duplikat berdasarkan `movieId` dihapus agar tidak terjadi duplikasi informasi film.
 
-- Menghapus data duplikat berdasarkan `movieId` untuk memastikan tidak ada film yang tercatat lebih dari sekali.
+### Membuat DataFrame `movie_new` untuk Content-Based Filtering dan membuat pasangan key-value pada movie_id, movie_name dan movie_genre
+- Data kolom `movieId`, `title`, dan `genres` diubah menjadi list:
+  - `movie_id = preparation_df['movieId'].tolist()`
+  - `movie_title = preparation_df['title'].tolist()`
+  - `movie_genre = preparation_df['genres'].tolist()`
+- Data ini digabungkan menjadi DataFrame `movie_new` dengan kolom `id`, `title`, dan `genre` untuk tahap Content-Based Filtering.
+- - Membuat dictionary untuk data `'movie_id'`, `'movie_title',` `'movie_genre'` dengan `movie_new = pd.DataFrame({
+    'id': movie_id,
+    'title': movie_title,
+    'genre': movie_genre
+})`
 
-#### 5⃣ Menggabungkan Dataset Movies dan Ratings
+## ✅ Tahapan Data Preparation Content-Based Filtering
 
-- Menggabungkan dataset `movies` dengan `ratings` berdasarkan `movieId` untuk membentuk dataset `rated_movies` yang berisi `movieId`, `title`, `genres`, `userId`, dan `rating`.
+### Konversi Kolom `genres` Menjadi List (Pra-One-Hot Encoding)
+- Pada `movie_new`, kolom `genre` diubah dari format string menjadi list genre menggunakan `apply(lambda x: x.split('|'))`.
 
-#### 6⃣ Mengonversi Kolom `genres` menjadi List
+### One-Hot Encoding pada Kolom `genres`
+- Menggunakan `MultiLabelBinarizer` dari `sklearn.preprocessing`, kolom `genres` diubah menjadi vektor biner.
+- Hasil one-hot encoding digabungkan dengan `movie_new` untuk menghasilkan DataFrame `df_final`.
 
-- Mengubah kolom `genres` dari format string menjadi list genre untuk setiap film.
+### Perhitungan Cosine Similarity untuk Content-Based Filtering
+- Cosine similarity dihitung menggunakan `sklearn.metrics.pairwise.cosine_similarity` pada hasil one-hot encoding genre.
+- Hasil cosine similarity disimpan dalam DataFrame `cosine_sim_df` dengan baris dan kolom berupa `title` film.
 
-#### 7⃣ Membuat DataFrame `movie_new` untuk Content-Based Filtering
+### Pembuatan Fungsi Rekomendasi
+- Fungsi `movie_recommendations()` dibuat untuk memberikan rekomendasi film berdasarkan kemiripan genre.
+- Fungsi ini menggunakan `cosine_sim_df` sebagai input untuk mencari film dengan kemiripan tertinggi.
 
-- Membuat DataFrame `movie_new` yang berisi `movieId`, `title`, dan `genre` (hasil konversi list).
-- Data ini digunakan untuk proses Content-Based Filtering.
+## ✅ Tahapan Data Preparation Collaborative Filtering
 
-#### 8⃣ One-Hot Encoding pada Kolom `genres`
+### Encoding Kolom `userId` dan `movieId` menjadi Integer
+- Kolom `userId` dan `movieId` diubah menjadi integer agar dapat digunakan sebagai input pada model Collaborative Filtering.
+- Tahapan:
+  - **Mendapatkan unique `userId` dan `movieId`**:
+    ```python
+    user_ids = df['userId'].unique().tolist()
+    movie_ids = df['movieId'].unique().tolist()
+    ```
+  - **Melakukan encoding `userId` dan `movieId`**:
+    ```python
+    user_to_user_encoded = {x: i for i, x in enumerate(user_ids)}
+    movie_to_movie_encoded = {x: i for i, x in enumerate(movie_ids)}
+    ```
+  - **Melakukan mapping encoding ke DataFrame**:
+    ```python
+    df['user'] = df['userId'].map(user_to_user_encoded)
+    df['movie'] = df['movieId'].map(movie_to_movie_encoded)
+    ```
 
-- Melakukan proses one-hot encoding pada kolom `genres` untuk menghasilkan representasi vektor biner dari genre film.
+### Membuat Mapping Reverse (Integer ke `userId` / `movieId`)
+- Untuk keperluan interpretasi hasil model:
+  ```python
+  user_encoded_to_user = {i: x for i, x in enumerate(user_ids)}
+  movie_encoded_to_movie = {i: x for i, x in enumerate(movie_ids)}
 
-#### 9⃣ Encoding pada `userId` dan `movieId` untuk Collaborative Filtering
+### Normalisasi Kolom `rating`
+- Kolom `rating` dinormalisasi dengan rumus `(rating - min_rating) / (max_rating - min_rating)` agar berada dalam skala 0–1.
+- Langkah tersebut memastikan model bekerja pada skala rating yang konsisten:
+- `min_rating = min(df['rating'])
+max_rating = max(df['rating'])
+df['rating'] = df['rating'].astype(np.float32)
+y = df['rating'].apply(lambda x: (x - min_rating) / (max_rating - min_rating)).values`
 
-- Melakukan encoding pada kolom `userId` dan `movieId` menjadi integer agar dapat digunakan sebagai input model Collaborative Filtering (RecommenderNet).
+### Membuat Input Features (x) untuk Model
+- Variabel x berisi pasangan (user, movie): `x = df[['user', 'movie']].values`
 
-#### 🔡 Train-Test Split
-
-- Membagi data `ratings` menjadi 80% untuk training dan 20% untuk testing, memastikan evaluasi model dilakukan pada data yang belum pernah dilihat.
+### Train-Test Split
+- Dataset diacak terlebih dahulu menggunakan: `df = df.sample(frac=1, random_state=42)`
+- Data kemudian dibagi menjadi 80% untuk training dan 20% untuk validation: `train_indices = int(0.8 * df.shape[0])
+x_train, x_val, y_train, y_val = (
+    x[:train_indices],
+    x[train_indices:],
+    y[:train_indices],
+    y[train_indices:]
+)`
+- Pembagian ini memastikan evaluasi dilakukan pada data yang belum pernah dilihat oleh model.
 
 ## 📍 Modeling
 
@@ -171,8 +235,8 @@ Dengan ini, bagian Modeling telah mencakup penjelasan metode, arsitektur, hasil 
 
 - **Metrik**: Root Mean Squared Error (RMSE)
 - **Nilai RMSE Akhir**:
-  - **RMSE (train)**: 0.2060
-  - **RMSE (validation)**: 0.2592
+  - **RMSE (train)**: 0.1804
+  - **RMSE (validation)**: 0.2562
 
 ### 2️⃣ Content-Based Filtering
 
