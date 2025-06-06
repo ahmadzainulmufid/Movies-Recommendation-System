@@ -71,11 +71,7 @@ Referensi Jurnal :
      - Duplikasi: Tidak ada
      - Outlier: Tidak ada
 
-ikut revisi Data Preparation dalam format .md:
 
-markdown
-Copy
-Edit
 # 📍 Data Preparation
 
 ## ✅ Tahapan Data Preparation
@@ -125,14 +121,6 @@ Edit
 ### One-Hot Encoding pada Kolom `genres`
 - Menggunakan `MultiLabelBinarizer` dari `sklearn.preprocessing`, kolom `genres` diubah menjadi vektor biner.
 - Hasil one-hot encoding digabungkan dengan `movie_new` untuk menghasilkan DataFrame `df_final`.
-
-### Perhitungan Cosine Similarity untuk Content-Based Filtering
-- Cosine similarity dihitung menggunakan `sklearn.metrics.pairwise.cosine_similarity` pada hasil one-hot encoding genre.
-- Hasil cosine similarity disimpan dalam DataFrame `cosine_sim_df` dengan baris dan kolom berupa `title` film.
-
-### Pembuatan Fungsi Rekomendasi
-- Fungsi `movie_recommendations()` dibuat untuk memberikan rekomendasi film berdasarkan kemiripan genre.
-- Fungsi ini menggunakan `cosine_sim_df` sebagai input untuk mencari film dengan kemiripan tertinggi.
 
 ## ✅ Tahapan Data Preparation Collaborative Filtering
 
@@ -187,9 +175,27 @@ x_train, x_val, y_train, y_val = (
 
 ### 1️⃣ Content-Based Filtering
 
-- **Fitur**: Genre
-- **Algoritma**: Cosine Similarity
-- **Output**: Rekomendasi film yang mirip dengan preferensi pengguna berdasarkan genre.
+### Definisi
+CBF merekomendasikan item berdasarkan kemiripan fitur konten (misalnya genre film) dengan preferensi pengguna atau item yang pernah diinteraksi.
+
+### Algoritma: Cosine Similarity
+- **Tujuan**:  
+  Mengukur kemiripan antar film berdasarkan representasi vektor fitur genre (one-hot encoding).
+  
+- **Rumus**:
+  
+  ![image](https://github.com/user-attachments/assets/b74e2176-3e46-4e8e-ba2d-a4d844f9e092)
+
+   di mana \(A\) dan \(B\) adalah vektor fitur genre dari dua film.
+
+### Implementasi
+1. **Representasi Fitur**:  
+   - Film direpresentasikan sebagai vektor biner genre (contoh: `[Horror=1, Comedy=0, ...]`).
+2. **Matriks Similarity**:  
+   - Menggunakan `sklearn.metrics.pairwise.cosine_similarity` untuk menghitung similarity antar film.  
+   - Hasil disimpan dalam matriks `cosine_sim_df` (ukuran \(N \times N\) dengan \(N\) = jumlah film).  
+3. **Fungsi Rekomendasi**:  
+   - `movie_recommendations(title, top_n=5)` mengambil film dengan skor similarity tertinggi dari `cosine_sim_df`.
 
 #### 📊 Contoh Top-5 Rekomendasi untuk Film "Lights Out (2016)"
 
@@ -201,15 +207,24 @@ x_train, x_val, y_train, y_val = (
 | Amityville II: The Possession (1982)| Horror |
 | Jeepers Creepers (2001)             | Horror |
 
+---
+
 ### 2️⃣ Collaborative Filtering
 
-- **Model**: RecommenderNet (Deep Learning)
-- **Arsitektur**:
-  - Embedding layer untuk `userId` dan `movieId`
-  - Dot product untuk prediksi rating
-- **Optimizer**: Adam
-- **Loss**: RMSE
-- **Epochs**: 20 epoch
+### Definisi
+CF memprediksi preferensi pengguna berdasarkan riwayat interaksi (rating) dari pengguna lain yang memiliki pola similar.
+
+### Model: `RecommenderNet` (Deep Learning)
+**Arsitektur**:
+1. **Input Layer**:  
+   - `userId` dan `movieId` di-embedding ke vektor berdimensi 64.
+2. **Dot Product**:  
+   - Hasil embedding di-dot product untuk memprediksi rating.
+3. **Optimizer & Loss**:  
+   - **Optimizer**: Adam (learning rate=0.001).  
+   - **Loss**: RMSE (Root Mean Squared Error).  
+4. **Pelatihan**:  
+   - 20 epoch dengan batch size 32.
 
 #### 📊 Contoh Top-5 Rekomendasi untuk User 1
 
@@ -220,6 +235,17 @@ x_train, x_val, y_train, y_val = (
 | 48516   | 0.84             |
 | 318     | 0.83             |
 | 912     | 0.83             |
+
+---
+
+## Perbandingan Skema Rekomendasi
+| Kriteria          | Content-Based Filtering       | Collaborative Filtering       |
+|-------------------|-------------------------------|-------------------------------|
+| **Basis Data**    | Fitur item (genre)            | Interaksi pengguna-item       |
+| **Kekuatan**      | Tidak butuh data pengguna     | Personalisasi berdasarkan grup|
+| **Kelemahan**     | Terbatas pada fitur yang ada  | Cold-start problem            |
+
+---
 
 #### 🔍 Visualisasi Training
 
