@@ -95,8 +95,10 @@ Referensi Jurnal :
 - Proses dilakukan menggunakan `rated_movies[rated_movies['genres'] != '(no genres listed)']`.
 
 ### Sampling Data (Penghapusan 99.9% Baris Data Secara Acak)
-- Untuk mempercepat pemrosesan, dilakukan penghapusan 99.9% baris data secara acak dengan `sample(frac=0.999, random_state=42)`.
-- Langkah ini ditujukan untuk mengurangi ukuran dataset agar lebih ringan pada tahap Content-Based Filtering.
+- Untuk mempercepat proses komputasi dan pelatihan model, dilakukan penghapusan **99.9% baris data secara acak**:
+  ```python
+  df = df.drop(df.sample(frac=0.999, random_state=42).index).reset_index(drop=True)
+- Dataset hasil sampling ini digunakan sebagai basis data untuk kedua pendekatan rekomendasi:  Content-Based Filtering dan Collaborative Filtering
 
 ### Menghapus Data Duplikat
 - Data duplikat berdasarkan `movieId` dihapus agar tidak terjadi duplikasi informasi film.
@@ -120,9 +122,22 @@ Referensi Jurnal :
 
 ### One-Hot Encoding pada Kolom `genres`
 - Menggunakan `MultiLabelBinarizer` dari `sklearn.preprocessing`, kolom `genres` diubah menjadi vektor biner.
+  ```python
+  from sklearn.preprocessing import MultiLabelBinarizer
+  mlb = MultiLabelBinarizer()
+  genre_onehot = mlb.fit_transform(data['genres_list'])
+  genre_onehot_df = pd.DataFrame(genre_onehot, columns=mlb.classes_, index=data.index)
+
+### Penggabungan Fitur
 - Hasil one-hot encoding digabungkan dengan `movie_new` untuk menghasilkan DataFrame `df_final`.
+- Data tersebut kemudian digunakan untuk menghitung kemiripan antar film berdasarkan genre-nya pada tahap Content-Based Filtering.
 
 ## ✅ Tahapan Data Preparation Collaborative Filtering
+
+### Sampling Dataset (Pengurangan 99.9% Data Secara Acak)
+- Sebelum dilakukan encoding dan pemodelan, dataset ratings terlebih dahulu dikurangi ukurannya untuk mempercepat proses training model Collaborative Filtering.
+- Sampling dilakukan dengan cara menghapus 99.9% data secara acak: `df = df.drop(df.sample(frac=0.999, random_state=42).index).reset_index(drop=True)`
+- Langkah ini penting agar pemodelan dapat dilakukan lebih cepat dan efisien, terutama untuk eksperimen awal dengan Neural Collaborative Filtering yang membutuhkan waktu komputasi tinggi.
 
 ### Encoding Kolom `userId` dan `movieId` menjadi Integer
 - Kolom `userId` dan `movieId` diubah menjadi integer agar dapat digunakan sebagai input pada model Collaborative Filtering.
